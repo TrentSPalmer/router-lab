@@ -1,0 +1,13 @@
+---
+- hosts: all[1]
+  tasks:
+      - name: traceroute test for dnettwo
+        script: dnettwo/traceroute_test.bash
+
+# serial 1 means one at a time
+# instead of all at once
+- hosts: all[2:]
+  serial: 1
+  tasks:
+      - name: traceroute test for dnetthree-five sequentially
+        script: lower_net/traceroute_test.bash

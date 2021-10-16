@@ -1,0 +1,22 @@
+---
+- hosts: all
+  become: true
+  become_user: root
+  tasks:
+      - name: Update apt repo and cache on all Debian/Ubuntu boxes
+        apt: update_cache=yes force_apt_get=yes cache_valid_time=3600
+        tags: debian_lab_clients_apt_update
+
+      - name: Upgrade the OS (apt-get dist-upgrade)
+        apt:
+          upgrade: dist
+
+      - name: Delete Package Cache
+        command: apt-get clean
+        args:
+          warn: false
+
+      - name: Reboot
+        command: bash -c 'sleep 5 && systemctl reboot'
+        async: 1
+        poll: 0

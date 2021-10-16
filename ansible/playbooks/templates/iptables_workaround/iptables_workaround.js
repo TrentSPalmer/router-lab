@@ -1,0 +1,9 @@
+*filter
+:INPUT ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+:FORWARD ACCEPT [0:0]
+
+-A INPUT -j ACCEPT -m conntrack --ctstate ESTABLISHED,RELATED
+-A OUTPUT -j ACCEPT -m conntrack --ctstate ESTABLISHED,RELATED
+
+COMMIT

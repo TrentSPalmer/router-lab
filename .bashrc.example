@@ -1,0 +1,8 @@
+export LIBVIRT_DEFAULT_URI="qemu+ssh://<user>@<server>/system"
+
+alias ansible-pb=anspb
+anspb() {
+  ANS_DIR=~/router-lab/ansible/playbooks;
+  echo Changing to "${ANS_DIR}" and executing: ansible-playbook "${@}"
+  (cd $ANS_DIR || exit ; ansible-playbook "${@}")
+}

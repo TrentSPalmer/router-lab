@@ -1,0 +1,185 @@
+---
+  # install pkgs on routers specifically
+ - hosts: all[0:1]
+   become: true
+   become_user: root
+   tasks:
+       - name: Make Sure packages are installed for lab routers
+         apt:
+           name:
+             - dnsmasq
+             - iptables-persistent
+           state: present
+         tags: apt_install_packages, dnsmasq, router_apt_install
+
+  # hosts dnetone-five
+  # install pks on all lab clients
+ - hosts: all
+   become: true
+   become_user: root
+   tasks:
+       - name: Make Sure packages are installed for all lab clients
+         apt:
+           pkg:
+            - needrestart
+            - screen
+            - traceroute
+           state: present
+         tags: apt_install_packages 
+       - name: Delete Package Cache
+         command: apt-get clean
+         args:
+           warn: false
+         tags: apt_install_packages 
+       - name: Backup Network Interfaces Config
+         vars: 
+           c_file: /etc/network/interfaces
+         command: bash -c '[ -f {{ c_file }}.bak ] || cp {{ c_file }} {{ c_file }}.bak'
+         args:
+           warn: false
+         tags: network_config 
+       - name: Configure Network Interfaces
+         template:
+           src: "{{ hostvars[inventory_hostname]['vars']['network_interfaces_template'] }}"
+           dest: /etc/network/interfaces
+         tags: network_config 
+
+  # hosts dnetone, dnettwo
+  # backup default dnsmasq conf
+ - hosts: all[0:1]
+   become: true
+   become_user: root
+   tasks:
+       - name: Backup dnsmasq Config
+         vars: 
+           c_file: /etc/dnsmasq.conf
+         command: bash -c '[ -f {{ c_file }}.bak ] || cp {{ c_file }} {{ c_file }}.bak'
+         args:
+           warn: false
+         tags: router_config 
+
+       - name: Configure dnsmasq
+         template:
+           src: "{{ hostvars[inventory_hostname]['vars']['dnsmasq_conf_template'] }}"
+           dest: /etc/dnsmasq.conf
+         tags: router_config 
+
+   # configure network ifup
+ - hosts: all[1:]
+   become: true
+   become_user: root
+   tasks:
+       - name: Configure Network IfUp 
+         template:
+           src: "{{ hostvars[inventory_hostname]['vars']['ifup_script_template'] }}"
+           dest: /etc/network/if-up.d/ifup-script
+           mode: '0744'
+         tags: network_config 
+
+   # restart networking hosts dnetone
+ - hosts: all[0]
+   become: true
+   become_user: root
+   tasks:
+       - name: Restart Networking
+         command: "{{ hostvars[inventory_hostname]['vars']['networking_restart_command'] }}"
+         args:
+           warn: false
+         tags: network_config 
+
+  # restart dnsmasq dnetone
+ - hosts: all[0]
+   become: true
+   become_user: root
+   tasks:
+       - name: Restart dnsmasq
+         service:
+           name: dnsmasq
+           state: restarted
+         tags: router_config 
+
+   # restart networking hosts dnettwo
+ - hosts: all[1]
+   become: true
+   become_user: root
+   tasks:
+       - name: Restart Networking
+         command: "{{ hostvars[inventory_hostname]['vars']['networking_restart_command'] }}"
+         args:
+           warn: false
+         tags: network_config 
+
+  # restart dnsmasq dnettwo
+ - hosts: all[1]
+   become: true
+   become_user: root
+   tasks:
+       - name: Restart dnsmasq
+         service:
+           name: dnsmasq
+           state: restarted
+         tags: router_config 
+
+   # restart networking hosts dnettwo
+ - hosts: all[2:]
+   become: true
+   become_user: root
+   tasks:
+       - name: Restart Networking
+         command: "{{ hostvars[inventory_hostname]['vars']['networking_restart_command'] }}"
+         args:
+           warn: false
+         tags: network_config 
+            
+  # hosts dnetone, dnettwo
+ - hosts: all[0:1]
+   become: true
+   become_user: root
+   tasks:
+       - name: Backup sysctl config
+         vars: 
+           c_file: /etc/sysctl.conf
+         command: bash -c '[ -f {{ c_file }}.bak ] || cp {{ c_file }} {{ c_file }}.bak'
+         args:
+           warn: false
+         tags: router_config 
+
+       - name: Edit sysctl config Enable ipv4 forwarding
+         vars: 
+           c_file: /etc/sysctl.conf
+         command: bash -c "sed -i 's/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/' {{ c_file }}"
+         args:
+           warn: false
+         tags: router_config, edit_sysconfig 
+
+       - name: Enable ipv4 forwarding
+         command: bash -c "sysctl -w net.ipv4.ip_forward=1"
+         args:
+           warn: false
+         tags: router_config, edit_sysconfig 
+
+       - name: Configure iptables workaround
+         template:
+           src: iptables_workaround/iptables_workaround.js
+           dest: /dev/shm/iptables_workaround
+         tags: router_config 
+
+       - name: Load iptables workaround
+         command: bash -c "iptables-restore < /dev/shm/iptables_workaround"
+         args:
+           warn: false
+         tags: router_config, edit_sysconfig 
+
+       - name: Configure iptables
+         template:
+           src: "{{ hostvars[inventory_hostname]['vars']['rules_v4_template'] }}"
+           dest: /etc/iptables/rules.v4
+         tags: router_config 
+
+       - name: Load iptables
+         command: bash -c "iptables-restore < /etc/iptables/rules.v4"
+         args:
+           warn: false
+         tags: router_config, edit_sysconfig 
+
+ - import_playbook: traceroute_test.yml

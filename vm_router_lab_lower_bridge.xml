@@ -1,0 +1,5 @@
+<network>
+  <name>vm_router_lab_lower_bridge</name>
+  <bridge name="virbr102" stp='off' macTableManager="libvirt"/> 
+  <mtu size="9216"/>
+</network>
