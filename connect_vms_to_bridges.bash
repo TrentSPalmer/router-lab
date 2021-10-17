@@ -20,7 +20,7 @@ function connect_vm_to_bridge() {
   then
     echo attaching "${1}" to "${2}"
     virsh attach-interface "${1}" --type network --source "${2}" --model virtio --config
-    connect_upper_bridge "${1}" "${2}"
+    connect_vm_to_bridge "${1}" "${2}"
   fi
   if [ "${is_attached}" == "1" ]
   then
