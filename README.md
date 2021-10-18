@@ -1,4 +1,7 @@
 # How To Use
+## Blog Series
+My [Six Part Blog Series](https://blog.trentsonlinedocs.xyz/posts/ansible-kvm-router-lab-part-1/)
+provides a more exhaustive explaination of this project.
 ## Render This README in terminal
 ```bash
 apt install python3-rich
